@@ -105,7 +105,7 @@ int main(int argc, char const *argv[])
 		{
 			if( !not_wait_flag )
 			{
-				wait(NULL);
+				waitpid(pid, NULL, 0);
 			}
 			reset_flag();
 			delete_arg(arg);
