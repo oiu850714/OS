@@ -229,7 +229,7 @@ void* thread_start(void* p)
 	}
 	else
 	{
-		sort(Array[round].begin, Array[round].end);
+		bubble_sort(Array[round].begin, Array[round].end);
 		//printf("thread %d really sorting\n", round);
 		sem_post(call_main + round - 8);
 		//use lib sort and signal such that mother thread can report
