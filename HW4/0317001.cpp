@@ -27,7 +27,7 @@ int shared_array2[1500000];
 sem_t sem[16];
 //!!!!!!!!!!!!!!!!!!!! sem[0] is for round!!!!!!!!!!!!!!
 sem_t call_main[8];
-//thread 8~15 use call_main to let main report result
+//thread 8~15 use call_main to notice main report result
 array Array[16];
 //Array store sub array's range
 
@@ -40,8 +40,9 @@ void* thread_start(void* p);
 void swap(int* const first, int* const second);
 int* select_pivot(int *begin, int *end);
 void output_file(int num_of_elements, const char *file);
-void cal_time(int num_of_elements, const char *mode, const char *file);
+void cal_time(int num_of_elements, int pool_size);
 void bubble_sort(int *begin, int *end);
+void switch_output_size(int num_of_elements, int pool_size);
 
 int main(int argc, char const *argv[])
 {
@@ -72,7 +73,7 @@ int main(int argc, char const *argv[])
 		//HW4: case not using threads to sort, need modity interface.
 		if(num_of_elements < 1000)
 		{
-			cal_time(num_of_elements, "multi thread", "output1.txt");
+			cal_time(num_of_elements, pool_size);
 			continue;
 		}
 
@@ -135,34 +136,9 @@ int main(int argc, char const *argv[])
 	    int sec,usec;
 	    sec = end.tv_sec - start.tv_sec;
 	    usec = end.tv_usec - start.tv_usec;
-	    printf("multi thread\n");
+	    printf("pool_size: %d\n", pool_size);
 	    printf("Elapsed time: %f ms \n", (sec*1000+(usec/1000.0)));
-		switch(pool_size){
-			case 1:
-				output_file(num_of_elements, "output_1.txt");
-				break;
-			case 2:
-				output_file(num_of_elements, "output_2.txt");
-				break;
-			case 3:
-				output_file(num_of_elements, "output_3.txt");
-				break;
-			case 4:
-				output_file(num_of_elements, "output_4.txt");
-				break;
-			case 5:
-				output_file(num_of_elements, "output_5.txt");
-				break;
-			case 6:
-				output_file(num_of_elements, "output_6.txt");
-				break;
-			case 7:
-				output_file(num_of_elements, "output_7.txt");
-				break;
-			case 8:
-				output_file(num_of_elements, "output_8.txt");
-				break;
-		}
+		switch_output_size(num_of_elements, pool_size);
 
 
 		for(int i = 0; i < pool_size; i++)
@@ -289,7 +265,7 @@ void output_file(int num_of_elements, const char* file)
 	}
 }
 
-void cal_time(int num_of_elements, const char * mode, const char * file)
+void cal_time(int num_of_elements, int pool_size)
 {
 	int sec,usec;
 	timeval start, end;
@@ -298,9 +274,9 @@ void cal_time(int num_of_elements, const char * mode, const char * file)
     gettimeofday(&end, 0);
     sec = end.tv_sec - start.tv_sec;
     usec = end.tv_usec - start.tv_usec;
-    printf("%s\n", mode);
+    printf("pool size: %d\n", pool_size);
     printf("Elapsed time: %f ms \n", (sec*1000+(usec/1000.0)));
-	output_file(num_of_elements, file);
+	switch_output_size(num_of_elements, pool_size);
 }
 
 void bubble_sort(int *begin, int *end)
@@ -316,4 +292,34 @@ void bubble_sort(int *begin, int *end)
 			}
 		}
 	}
+}
+
+void switch_output_size(int num_of_elements, int pool_size)
+{
+	switch(pool_size){
+		case 1:
+			output_file(num_of_elements, "output_1.txt");
+			break;
+		case 2:
+			output_file(num_of_elements, "output_2.txt");
+			break;
+		case 3:
+			output_file(num_of_elements, "output_3.txt");
+			break;
+		case 4:
+			output_file(num_of_elements, "output_4.txt");
+			break;
+		case 5:
+			output_file(num_of_elements, "output_5.txt");
+			break;
+		case 6:
+			output_file(num_of_elements, "output_6.txt");
+			break;
+		case 7:
+			output_file(num_of_elements, "output_7.txt");
+			break;
+		case 8:
+			output_file(num_of_elements, "output_8.txt");
+			break;
+		}
 }
