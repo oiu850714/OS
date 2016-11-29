@@ -49,6 +49,8 @@ int main(int argc, char const *argv[])
 
 	for(int pool_size = 1; pool_size <= 8; pool_size++)
 	{
+		sem_init(&mutex_job_queue, 0, 1);
+		sem_init(&mutex_start_job, 0, 0);
 		FILE * fp = fopen("input.txt","r");
 		//file name
 		if(!fp)
@@ -112,10 +114,10 @@ int main(int argc, char const *argv[])
 		//sem_post(sem+1);
 		// this sem_post can let thread 1 start
 
-
+		sem_wait(&mutex_job_queue);
 		job_queue.push(1);
-		sem_post(&mutex_start_job);
 		sem_post(&mutex_job_queue);
+		sem_post(&mutex_start_job);
 		//push first job
 		//and notice first thread to start working
 
@@ -156,23 +158,61 @@ void* thread_HW4(void *p)
 	{
 		sem_wait(&mutex_start_job);
 		sem_wait(&mutex_job_queue);
-		int i = job_queue.front();
+		int round = job_queue.front();
 		job_queue.pop();
+		//printf("take job %d and pop it!\n", round);
+		if(round < 8)
+		{
+			job_queue.push(2*round);
+			job_queue.push(2*round + 1);
+		}
 		sem_post(&mutex_job_queue);
 		
-		thread_start((void*)(&i));
+		//HW4:thread_start((void*)(&i));
 		
-		sem_wait(sem);
+		//HW4:sem_wait(sem);
 		//same trick in HW3
-		
-		if(i < 8)
+		if(round < 8)
 		{
-			sem_wait(&mutex_job_queue);
-			job_queue.push(2*i);
-			job_queue.push(2*i + 1);
+			//printf("thread %d start select_pivot!!\n", round);
+			int empty_flag = 0;
+			/*if(Array[round].begin == Array[round].end)
+			{
+				Array[2*round].begin = Array[2*round].end = Array[round].begin;
+				Array[2*round+1].begin = Array[2*round+1].end = Array[round].begin;
+				empty_flag =1;
+			}*/
+			if(!empty_flag)
+			{
+				int *pivot = select_pivot(Array[round].begin, Array[round].end);
+				//printf("thread %d select finished\n", round);
+				//printf("%d pivot!!!\n", *pivot);
+				//select pivot and signal such that child can sort
+				Array[2 * round].begin = Array[round].begin;
+				Array[2 * round].end = pivot;
+				//sem_post(sem + 2 * round);
+				//HW4: I think line above is not reqeired.
+				Array[2 * round + 1].begin = pivot + 1;
+				Array[2 * round + 1].end = Array[round].end;
+				//sem_post(sem + 2 * round + 1);
+				//HW4: I think line above is not reqeired.
+			}
+			//printf("%d really has sorted array\n", round);
+		}
+		else
+		{
+			bubble_sort(Array[round].begin, Array[round].end);
+			//printf("thread %d really sorting\n", round);
+			sem_post(call_main + round - 8);
+			//use lib sort and signal such that mother thread can report
+		}
+		if(round < 8)
+		{
+			//printf("job %d start pushing new job %d\n", round, 2*round);
 			sem_post(&mutex_start_job);
+			//printf("job %d start pushing new job %d\n", round, 2*round+1);
 			sem_post(&mutex_start_job);
-			sem_post(&mutex_job_queue);
+			//sem_post(&mutex_job_queue);
 		}
 	}
 }
@@ -282,13 +322,13 @@ void cal_time(int num_of_elements, int pool_size)
 void bubble_sort(int *begin, int *end)
 {
 	int size = end - begin;
-	for(int i = size; i-- ;)
+	for(int i = size; i; --i)
 	{
 		for(int j = 0; j < i-1; j++)
 		{
 			if(*(begin+j) > *(begin+j+1))
 			{
-				swap(begin+i, begin+j);
+				swap(begin+j, begin+j+1);
 			}
 		}
 	}
