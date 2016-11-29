@@ -137,7 +137,32 @@ int main(int argc, char const *argv[])
 	    usec = end.tv_usec - start.tv_usec;
 	    printf("multi thread\n");
 	    printf("Elapsed time: %f ms \n", (sec*1000+(usec/1000.0)));
-		output_file(num_of_elements, "output1.txt");
+		switch(pool_size){
+			case 1:
+				output_file(num_of_elements, "output_1.txt");
+				break;
+			case 2:
+				output_file(num_of_elements, "output_2.txt");
+				break;
+			case 3:
+				output_file(num_of_elements, "output_3.txt");
+				break;
+			case 4:
+				output_file(num_of_elements, "output_4.txt");
+				break;
+			case 5:
+				output_file(num_of_elements, "output_5.txt");
+				break;
+			case 6:
+				output_file(num_of_elements, "output_6.txt");
+				break;
+			case 7:
+				output_file(num_of_elements, "output_7.txt");
+				break;
+			case 8:
+				output_file(num_of_elements, "output_8.txt");
+				break;
+		}
 
 
 		for(int i = 0; i < pool_size; i++)
@@ -204,7 +229,7 @@ void* thread_start(void* p)
 	}
 	else
 	{
-		bubble_sort(Array[round].begin, Array[round].end);
+		sort(Array[round].begin, Array[round].end);
 		//printf("thread %d really sorting\n", round);
 		sem_post(call_main + round - 8);
 		//use lib sort and signal such that mother thread can report
@@ -249,13 +274,16 @@ void output_file(int num_of_elements, const char* file)
 	FILE *fout = fopen(file,"w");
 	for(int i = 0; i < num_of_elements ; ++i)
 	{
+		//fprintf(stdout, "%d", shared_array[i]);
 		fprintf(fout, "%d", shared_array[i]);
 		if (i + 1 <num_of_elements)
 		{
+			//fprintf(stdout, " ");
 			fprintf(fout, " ");
 		}
 		else
 		{
+			//fprintf(stdout, "\n");
 			fprintf(fout, "\n");
 		}
 	}
@@ -278,11 +306,11 @@ void cal_time(int num_of_elements, const char * mode, const char * file)
 void bubble_sort(int *begin, int *end)
 {
 	int size = end - begin;
-	for(int i = 0; i < size; i++)
+	for(int i = size; i-- ;)
 	{
-		for(int j = 0; j < i; j++)
+		for(int j = 0; j < i-1; j++)
 		{
-			if(*(begin+i) > *(begin+j))
+			if(*(begin+j) > *(begin+j+1))
 			{
 				swap(begin+i, begin+j);
 			}

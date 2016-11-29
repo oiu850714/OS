@@ -228,11 +228,11 @@ void cal_time(int num_of_elements, const char * mode, const char * file, int cho
 void bubble_sort(int *begin, int *end)
 {
 	int size = end - begin;
-	for(int i = 0; i < size; i++)
+	for(int i = size; i-- ;)
 	{
-		for(int j = 0; j < i; j++)
+		for(int j = 0; j < i-1; j++)
 		{
-			if(*(begin+i) > *(begin+j))
+			if(*(begin+j) > *(begin+j+1))
 			{
 				swap(begin+i, begin+j);
 			}
