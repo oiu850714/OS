@@ -147,6 +147,10 @@ int main(int argc, char const *argv[])
 		{
 			pthread_cancel(*(tid+i));
 		}
+		for(int i = 0; i < 16; i++)
+		{
+			Array[i].begin = Array[i].end = NULL;	
+		}
 	}
 	return 0;
 }
@@ -161,11 +165,6 @@ void* thread_HW4(void *p)
 		int round = job_queue.front();
 		job_queue.pop();
 		//printf("take job %d and pop it!\n", round);
-		if(round < 8)
-		{
-			job_queue.push(2*round);
-			job_queue.push(2*round + 1);
-		}
 		sem_post(&mutex_job_queue);
 		
 		//HW4:thread_start((void*)(&i));
@@ -176,15 +175,22 @@ void* thread_HW4(void *p)
 		{
 			//printf("thread %d start select_pivot!!\n", round);
 			int empty_flag = 0;
-			/*if(Array[round].begin == Array[round].end)
+			if(Array[round].begin == Array[round].end)
 			{
+				printf("job %d empty!!!\n", round);
 				Array[2*round].begin = Array[2*round].end = Array[round].begin;
 				Array[2*round+1].begin = Array[2*round+1].end = Array[round].begin;
 				empty_flag =1;
-			}*/
+			}
 			if(!empty_flag)
 			{
 				int *pivot = select_pivot(Array[round].begin, Array[round].end);
+				if(pivot == Array[round].begin)
+					printf("job %d's pivot equal begin!\n", round);
+				if(pivot == Array[round].end)
+					printf("job %d's pivot equal end!\n", round);
+
+				printf("round : %d pivot: %d begin: %d end: %d\n", round, pivot, Array[round].begin, Array[round].end );
 				//printf("thread %d select finished\n", round);
 				//printf("%d pivot!!!\n", *pivot);
 				//select pivot and signal such that child can sort
@@ -201,13 +207,21 @@ void* thread_HW4(void *p)
 		}
 		else
 		{
-			bubble_sort(Array[round].begin, Array[round].end);
+			if(Array[round].begin != Array[round].end)
+				bubble_sort(Array[round].begin, Array[round].end);
 			//printf("thread %d really sorting\n", round);
 			sem_post(call_main + round - 8);
 			//use lib sort and signal such that mother thread can report
 		}
 		if(round < 8)
 		{
+			sem_wait(&mutex_job_queue);
+			job_queue.push(2*round);
+			job_queue.push(2*round + 1);
+			sem_post(&mutex_job_queue);
+			/*
+			@@@@@@@@@@@@@@@@@@@@@ cannot understand why must...above..
+			*/
 			//printf("job %d start pushing new job %d\n", round, 2*round);
 			sem_post(&mutex_start_job);
 			//printf("job %d start pushing new job %d\n", round, 2*round+1);
