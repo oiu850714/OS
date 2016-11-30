@@ -35,19 +35,36 @@ sem_t mutex_job_queue;
 sem_t mutex_start_job;
 
 
-void* thread_HW4(void *task);
+void* thread_HW4(void *p);
+//thread's entry point
+
 void* thread_start(void* p);
+//HW3's entry point
+
 void swap(int* const first, int* const second);
+//swapping two elements pointed by first and second
+
 int* select_pivot(int *begin, int *end);
+//selecting the pivot in the array 
+//beginning with begin ending with end(not encluded)
+//and partition this array
+
 void output_file(int num_of_elements, const char *file);
+// output result to FILE *file
+
 void cal_time(int num_of_elements, int pool_size);
+//used in case when num_of_elements < 1000
+
 void bubble_sort(int *begin, int *end);
+//fucking bubble sort..
+
 void switch_output_size(int num_of_elements, int pool_size);
+//using pool_size in switch case to know what filename should use
 
 int main(int argc, char const *argv[])
 {
 
-	for(int pool_size = 1; pool_size <= 8; pool_size++)
+	for(int pool_size = 8; pool_size >= 1; pool_size--)
 	{
 		sem_init(&mutex_job_queue, 0, 1);
 		sem_init(&mutex_start_job, 0, 0);
@@ -126,7 +143,7 @@ int main(int argc, char const *argv[])
 		for(int i = 0; i < 8; ++i)
 		{
 			sem_wait(call_main + i);
-			//printf("call main %d finished!!\n", i);
+			printf("job %d finished!!\n", i + 8);
 		}
 		// HW4: main in this HW4 may need another way
 		// to check that array is sorted
@@ -142,7 +159,7 @@ int main(int argc, char const *argv[])
 	    printf("Elapsed time: %f ms \n", (sec*1000+(usec/1000.0)));
 		switch_output_size(num_of_elements, pool_size);
 
-
+		printf("poolsize %d finished\n", pool_size);
 		for(int i = 0; i < pool_size; i++)
 		{
 			pthread_cancel(*(tid+i));
@@ -185,11 +202,6 @@ void* thread_HW4(void *p)
 			if(!empty_flag)
 			{
 				int *pivot = select_pivot(Array[round].begin, Array[round].end);
-				if(pivot == Array[round].begin)
-					printf("job %d's pivot equal begin!\n", round);
-				if(pivot == Array[round].end)
-					printf("job %d's pivot equal end!\n", round);
-
 				printf("round : %d pivot: %d begin: %d end: %d\n", round, pivot, Array[round].begin, Array[round].end );
 				//printf("thread %d select finished\n", round);
 				//printf("%d pivot!!!\n", *pivot);
@@ -207,8 +219,8 @@ void* thread_HW4(void *p)
 		}
 		else
 		{
-			if(Array[round].begin != Array[round].end)
-				bubble_sort(Array[round].begin, Array[round].end);
+			printf("job %d start sorting\n", round );
+			bubble_sort (Array[round].begin, Array[round].end);
 			//printf("thread %d really sorting\n", round);
 			sem_post(call_main + round - 8);
 			//use lib sort and signal such that mother thread can report
@@ -218,15 +230,22 @@ void* thread_HW4(void *p)
 			sem_wait(&mutex_job_queue);
 			job_queue.push(2*round);
 			job_queue.push(2*round + 1);
+			sem_post(&mutex_start_job);
+			sem_post(&mutex_start_job);
 			sem_post(&mutex_job_queue);
-			/*
-			@@@@@@@@@@@@@@@@@@@@@ cannot understand why must...above..
-			*/
+			//must put above lines here, otherwise..
+			//there maybe this case:
+			//thread_A and thread_B will push round, A pushes before B,
+			//but B finishes working before A, and when B finishes, A not
+			//yet, then B's two child thread will take A's 
+			//not-yet-partitioned Array, which make all things fucking shit.
+			//In short, you must be finished job before pushing new job...
 			//printf("job %d start pushing new job %d\n", round, 2*round);
-			sem_post(&mutex_start_job);
+			//sem_post(&mutex_start_job);
 			//printf("job %d start pushing new job %d\n", round, 2*round+1);
-			sem_post(&mutex_start_job);
+			//sem_post(&mutex_start_job);
 			//sem_post(&mutex_job_queue);
+			printf("job %d push new jobs in queue!\n",round );
 		}
 	}
 }
