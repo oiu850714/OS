@@ -21,6 +21,18 @@ int inode_num;
 int file_flag;
 char file_name[MAX_FILE_LENGTH];
 
+void find_file(char *dir_path)
+{
+	DIR *dp = opendir(dir_path);
+	assert(dp != NULL);
+	struct dirent *d;
+	while ((d = readdir(dp)) != NULL) 
+	{
+		printf("%d %s\n", (int) d->d_ino, d->d_name);
+	}
+	closedir(dp);
+}
+
 int main(int argc, char *argv[]) 
 {
 	/*
@@ -68,14 +80,9 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	DIR *dp = opendir(".");
-	assert(dp != NULL);
-	struct dirent *d;
-	while ((d = readdir(dp)) != NULL) 
-	{
-		printf("%d %s\n", (int) d->d_ino, d->d_name);
-	}
-	closedir(dp);
+
+	////// recursive function
+	find_file(argv[1]);
 
 
 	return 0;
