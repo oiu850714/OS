@@ -8,13 +8,16 @@
 #include <unistd.h>
 
 #define MAX_FILE_LENGTH 255
+#define MiB 1048576
 
 char path_name[MAX_FILE_LENGTH + 1];
 char path_name_cwd[MAX_FILE_LENGTH + 1];
 
-int size_min_max_flag;
-int size;
-// 1 = max, 2 = min
+int size_min_flag;
+int size_max_flag;
+int size_min;
+int size_max;
+
 	
 int inode_flag;
 int inode_num;
@@ -29,37 +32,63 @@ void find_file(char *dir_path)
 	struct dirent *d;
 	while ((d = readdir(dp)) != NULL) 
 	{
-		//if(d->d_type == DT_DIR)
-		struct stat tmp;
-		//printf("%u %s\n", d->d_type, d->d_name);
-		stat(d->d_name, &tmp);
-		if((tmp.st_mode & S_IFMT) == S_IFREG)
-			printf("%s is a reg file\n", d->d_name);
+		struct stat tmp_stat;
+		char tmp_file_name[MAX_FILE_LENGTH + 1];
+		strncpy(tmp_file_name, path_name_cwd, MAX_FILE_LENGTH + 1);
+		strncat(tmp_file_name, d->d_name, MAX_FILE_LENGTH + 1 - strlen(path_name_cwd) - strlen(d->d_name));
+		lstat(tmp_file_name, &tmp_stat);
+		//if not want to chdir, need to pass ${cwd}${d->d_name} in lstat()
+		
+		if((tmp_stat.st_mode & S_IFMT) == S_IFDIR && 
+			strncmp(d->d_name, ".", MAX_FILE_LENGTH + 1) &&
+			strncmp(d->d_name, "..", MAX_FILE_LENGTH + 1))
+		{
+			strncat(path_name_cwd, d->d_name, MAX_FILE_LENGTH + 1 - strlen(path_name_cwd));
+			strncat(path_name_cwd, "/", MAX_FILE_LENGTH + 1 - strlen(path_name_cwd));
+			// ${cwd} become ${cwd}${d->d_name}/
+			
+			find_file(path_name_cwd);
+			
+			path_name_cwd[strlen(path_name_cwd) - strlen(d->d_name) - 1] = '\0';
+		}
+		
+
+		if(inode_flag)
+		{
+			if((int)tmp_stat.st_ino != inode_num)
+				continue;
+		}
+		if(file_flag)
+		{
+			if(strncmp(d->d_name, file_name, MAX_FILE_LENGTH + 1))
+				continue;
+		}
+		if(size_max_flag)
+		{
+			if((unsigned)tmp_stat.st_size > size_max * MiB )
+				continue;
+		}
+		if(size_min_flag)
+		{
+			if((unsigned)tmp_stat.st_size < size_min * MiB )
+				continue;
+		}
+		
+		printf("%s %d %u\n", tmp_file_name, (int)tmp_stat.st_ino, (unsigned)tmp_stat.st_size/MiB);
 	}
 	closedir(dp);
 }
 
 int main(int argc, char *argv[]) 
 {
-	/*
-	DIR *dp = opendir(".");
-	assert(dp != NULL);
-	struct dirent *d;
-	while ((d = readdir(dp)) != NULL) 
-	{
-		printf("%d %s\n", (int) d->d_ino, d->d_name);
-	}
-	closedir(dp);
-	*/
-
 	assert(argc >= 2 && argc % 2 == 0);
 	//assert num of args(including program name) is even (>=2)
 
 	strncpy(path_name, argv[1], MAX_FILE_LENGTH + 1);
 
-	for(int i = 2; i < argc; i++)
+	for(int i = 2; i < argc; i+=2)
 	{
-		switch(argv[i][0])
+		switch(argv[i][1])
 		{
 			case 'i':
 				//case in -inode
@@ -73,28 +102,25 @@ int main(int argc, char *argv[])
 				break;
 			case 's':
 				//case in -size
-				if(argv[i][7] == 'i')
+				if(argv[i][7] == 'a')
 				{	
-					size_min_max_flag = 1;
+					size_max_flag = 1;
+					size_max = atoi(argv[i+1]);
 					//case in -size_min
 				}
 				else
 				{
-					size_min_max_flag = 2;
+					size_min_flag = 1;
+					size_min = atoi(argv[i+1]);
 					//case in -size_max
 				}
-				size = atoi(argv[i+1]);
 				break;
 		}
 	}
 
-
 	////// recursive function
-	int ch_result = chdir(path_name);
-	assert(ch_result == 0);
 	strncpy(path_name_cwd, path_name, MAX_FILE_LENGTH + 1);
 	find_file(path_name_cwd);
-
 
 	return 0;
 }
