@@ -5,11 +5,12 @@
 #include <dirent.h>
 #include <assert.h>
 #include <string.h>
+#include <unistd.h>
 
-#define MAX_FILE_LENGTH 256
+#define MAX_FILE_LENGTH 255
 
-
-char path_name[MAX_FILE_LENGTH];
+char path_name[MAX_FILE_LENGTH + 1];
+char path_name_cwd[MAX_FILE_LENGTH + 1];
 
 int size_min_max_flag;
 int size;
@@ -19,7 +20,7 @@ int inode_flag;
 int inode_num;
 
 int file_flag;
-char file_name[MAX_FILE_LENGTH];
+char file_name[MAX_FILE_LENGTH + 1];
 
 void find_file(char *dir_path)
 {
@@ -28,7 +29,12 @@ void find_file(char *dir_path)
 	struct dirent *d;
 	while ((d = readdir(dp)) != NULL) 
 	{
-		printf("%d %s\n", (int) d->d_ino, d->d_name);
+		//if(d->d_type == DT_DIR)
+		struct stat tmp;
+		//printf("%u %s\n", d->d_type, d->d_name);
+		stat(d->d_name, &tmp);
+		if((tmp.st_mode & IS_IFMT) == S_IFREG)
+			printf("%s is a reg file\n", d->d_name);
 	}
 	closedir(dp);
 }
@@ -49,6 +55,8 @@ int main(int argc, char *argv[])
 	assert(argc >= 2 && argc % 2 == 0);
 	//assert num of args(including program name) is even (>=2)
 
+	strncpy(path_name, argv[1], MAX_FILE_LENGTH + 1);
+
 	for(int i = 2; i < argc; i++)
 	{
 		switch(argv[i][0])
@@ -61,7 +69,7 @@ int main(int argc, char *argv[])
 			case 'n':
 				//case in -name
 				file_flag = 1;
-				strncpy(file_name, argv[i+1], MAX_FILE_LENGTH);
+				strncpy(file_name, argv[i+1], MAX_FILE_LENGTH + 1);
 				break;
 			case 's':
 				//case in -size
@@ -82,7 +90,10 @@ int main(int argc, char *argv[])
 
 
 	////// recursive function
-	find_file(argv[1]);
+	int ch_result = chdir(path_name);
+	assert(ch_result == 0);
+	strncpy(path_name_cwd, path_name, MAX_FILE_LENGTH + 1);
+	find_file(path_name_cwd);
 
 
 	return 0;
