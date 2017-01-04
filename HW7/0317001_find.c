@@ -33,7 +33,7 @@ void find_file(char *dir_path)
 		struct stat tmp;
 		//printf("%u %s\n", d->d_type, d->d_name);
 		stat(d->d_name, &tmp);
-		if((tmp.st_mode & IS_IFMT) == S_IFREG)
+		if((tmp.st_mode & S_IFMT) == S_IFREG)
 			printf("%s is a reg file\n", d->d_name);
 	}
 	closedir(dp);
